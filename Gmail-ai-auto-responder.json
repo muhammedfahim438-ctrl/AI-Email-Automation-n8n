@@ -1,0 +1,283 @@
+{
+  "name": "GAMIL RESPONDER",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "=everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "-from:me"
+        },
+        "options": {}
+      },
+      "id": "22004fa4-c395-4678-a6a2-67bd72ecb5a7",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -672,
+        -960
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ItSlZkww2vrRWuYD",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "53849246-ad32-4845-9976-9f9688f5a6f2",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.needsReply }}",
+              "rightValue": "true"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8381ae14-2ed6-4355-bd4d-ee312a2bdc45",
+      "name": "If Needs Reply",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -144,
+        -960
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsonSchema": "{\n \"type\": \"object\",\n \"properties\": {\n \"needsReply\": {\n \"type\": \"boolean\"\n }\n },\n \"required\": [\"needsReply\"]\n}\n"
+      },
+      "id": "3296ab9f-efd7-42ed-9dbf-5f01dd834e89",
+      "name": "JSON Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        -304,
+        -736
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Gmail Trigger').item.json.headers.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.text.replace(/\\n/g, \"<br />\\n\") }}",
+        "options": {
+          "threadId": "={{ $('Gmail Trigger').item.json.threadId }}",
+          "sendTo": "={{ $('Gmail Trigger').item.json.headers.from }}"
+        }
+      },
+      "id": "62f168ea-3256-46a3-8669-aa693ac3abd4",
+      "name": "Gmail - Create Draft",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        416,
+        -976
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "170f7edb-199f-4d7e-a23a-53a2e6e4d32c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pXuDJpDcgKEPyOWk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Subject: {{ $json.subject }}\nMessage:\n{{ $json.textAsHtml }} ",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Your task is to assess if the message requires a response. Return in JSON format true if it does, false otherwise.\nMarketing emails don't require a response."
+            }
+          ]
+        }
+      },
+      "id": "84ec9539-8c98-4254-8968-f2c9f00471cb",
+      "name": "Assess if message needs a reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -448,
+        -960
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject: {{ $('Gmail Trigger').item.json.subject }}\nMessage: {{ $('Gmail Trigger').item.json.textAsHtml }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You're a helpful personal assistant and your task is to draft replies on my behalf to my incoming emails. Whenever I provide some text from an email, return an appropriate draft reply for it and nothing else.\nEnsure that the reply is suitable for a professional email setting and addresses the topic in a clear, structured, and detailed manner.\nDo not make things up.\n\nDetailed instructions:\n- Be concise and maintain a business casual tone.\n- Start with \"Hello,\", and end with \"Best,\"\n- When replying to yes-no questions, draft 2 responses: one affirmative and one negative separated by \" - - - - - - - OR - - - - - - - \"\n- If you don't know an answer, you can leave placeholders like \"[YOUR_ANSWER_HERE]\".\n- Don't use any special formatting, only plain text.\n- Reply in the same language as the inbound email."
+            }
+          ]
+        }
+      },
+      "id": "4c4ee14c-f487-4bb3-8d54-a765ec10e504",
+      "name": "Generate email reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        112,
+        -976
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -736
+      ],
+      "id": "b3761064-cb7d-4a43-af9e-efb00e5cb88d",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "VPigTAdPWYgfQYRC",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -752
+      ],
+      "id": "27ec5da6-8e4f-4d85-a232-df95ca315853",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "VPigTAdPWYgfQYRC",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "JSON Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Assess if message needs a reply",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Assess if message needs a reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Needs Reply": {
+      "main": [
+        [
+          {
+            "node": "Generate email reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Generate email reply": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Create Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess if message needs a reply": {
+      "main": [
+        [
+          {
+            "node": "If Needs Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Assess if message needs a reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate email reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "9dd2d2c6-49e9-4d7f-8404-9f448c9642f6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b502a5b96259655358531df0fadb17693a57071d63611d5085394dcdc61eb6b1"
+  },
+  "id": "QveSrI4HfBOaPJ7D",
+  "tags": []
+}
