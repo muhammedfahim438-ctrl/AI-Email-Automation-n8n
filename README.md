@@ -43,6 +43,9 @@ This project is an AI-powered email automation workflow built using n8n. It auto
 3. Add Groq API key
 4. Activate workflow
 
+## 🖼 Workflow Screenshot
+
+![Workflow](workflow.png)
 ## 👨‍💻 Author
 
 Muhammed Fahim M
